@@ -1,19 +1,27 @@
-// adsr envelope example
 
 #include "daisysp.h"
 #include "daisy_seed.h"
 
 // Shortening long macro for sample rate
 #ifndef sample_rate
-
 #endif
 
 // Interleaved audio definitions
 #define LEFT (i)
 #define RIGHT (i + 1)
+// set maximimum ADSR values in seconds 
+#define maxAttack 1
+#define maxDecay 2
+#define maxSustain 1
+#define maxRelease 5
 
 using namespace daisysp;
 using namespace daisy;
+
+//globals
+float adsrValues[4];
+//function protos
+void setadsrValues();
 
 static DaisySeed  hw;
 static Adsr       env;
@@ -24,8 +32,10 @@ bool              gate;
 static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
                           AudioHandle::InterleavingOutputBuffer out,
                           size_t                                size)
-{
-    float osc_out, env_out;
+{ 
+	setadsrValues();
+	
+	float osc_out, env_out;
     for(size_t i = 0; i < size; i += 2)
     {
         // When the metro ticks, trigger the envelope to start.
@@ -34,8 +44,8 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
             gate = !gate;
         }
 
-        // Use envelope to control the amplitude of the oscillator.
-        env_out = env.Process(gate);
+        // Use envelope to control the amplitude of the oscillator.  
+		env_out = env.Process(gate);
         osc.SetAmp(env_out);
         osc_out = osc.Process();
 
@@ -82,19 +92,26 @@ int main(void)
     osc.SetWaveform(osc.WAVE_TRI);
     osc.SetFreq(220);
     osc.SetAmp(0.25);
-
-    // Start logging for printing over serial
-    hw.StartLog(true); 
     
     // start callback
     hw.StartAudio(AudioCallback);
 
     while(1) 
     {
-        hw.PrintLine("input 1: %d",hw.adc.Get(0));
-        hw.PrintLine("input 2: %d",hw.adc.Get(1));
-        hw.PrintLine("input 3: %d",hw.adc.Get(2));
-        hw.PrintLine("input 4: %d",hw.adc.Get(3));
-        hw.DelayMs(250);
     }
 }
+	
+// function defs 
+void setadsrValues()
+	{
+		adsrValues[0] = hw.adc.GetFloat(0) * maxAttack; // Attack 1 seconds 
+		adsrValues[1] = hw.adc.GetFloat(1) * maxDecay; // Decay 2 seconds 
+		adsrValues[2] = hw.adc.GetFloat(2) * maxSustain; // Sustain
+		adsrValues[3] = hw.adc.GetFloat(3) * maxRelease; // Release 5 seconds
+
+		env.SetTime(ADSR_SEG_ATTACK, adsrValues[0]);
+        env.SetTime(ADSR_SEG_DECAY, adsrValues[1]);
+        env.SetTime(ADSR_SEG_RELEASE, adsrValues[2]);
+        env.SetSustainLevel(adsrValues[3]);
+	}
+
