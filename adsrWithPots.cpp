@@ -55,14 +55,14 @@ int main(void)
     env.Init(sample_rate);
     osc.Init(sample_rate);
 
-    // set up ADC's
+    // // set up ADC's
     AdcChannelConfig adc_cfg[3];
     adc_cfg[0].InitSingle(seed::A0);
     adc_cfg[1].InitSingle(seed::A1);
     adc_cfg[2].InitSingle(seed::A2);
-    adc_cfg[2].InitSingle(seed::A3);
+    adc_cfg[3].InitSingle(seed::A3);
 
-    // Initialize the ADC peripheral with that configuration
+    //Initialize the ADC peripheral with that configuration 4 channels 
     hw.adc.Init(adc_cfg, 4);
 
     /** Start the ADC conversions in the background */
@@ -84,7 +84,7 @@ int main(void)
     osc.SetAmp(0.25);
 
     // Start logging for printing over serial
-    hw.StartLog(); 
+    hw.StartLog(true); 
     
     // start callback
     hw.StartAudio(AudioCallback);
